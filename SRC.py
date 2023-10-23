@@ -76,3 +76,4 @@ class SRC_strength:
                 # distance[i][sign] = np.sqrt(np.sum(np.square(x_train_single - x_test_single)))
                 sign += 1
         return np.array(distance)
+

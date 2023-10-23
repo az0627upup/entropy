@@ -14,12 +14,20 @@ class KSS:
         self.k = k
 
     def fit(self, X, Y, mass_type=None, dataset_name=None):
+        """
+        :param X:  训练样本的特征
+        :param Y:  训练样本的标签
+        :param mass_type:
+        :param dataset_name:
+        :return:
+        """
         self.X = X
         self.Y = Y
         if mass_type == 'GP':
             self.mass = GPMF(dataset_name, X, Y)
         else:
             self.mass = TopMF(mass_type, X, Y)
+        self.massX = self.mass.calculate_mass()
         self.massX = self.mass.calculate_mass()
         # self.massX = 0.01 * np.array(self.mass.calculate_mass()) + 0.01 * np.array(calcute_entropy(self.X, self.Y))
 
@@ -90,6 +98,17 @@ class KSS:
             finalOutput.append(max_category)
             print(finalOutput)
 
+    def calculate_similarity(self, fea_train, fea_test):
+        """
+        计算相似度
+        :param fea_train:
+        :param fea_test:
+        :return:
+        """
+        sample_data = np.concatenate((fea_train, fea_test))
+        attr = self.compute_similarity_before(sample_data)
+        return attr
+
     def predict_class(self, XTest):
         """
         使用(宋祥鑫)样本相似度去做度量来计算测试样本和训练样本之间的距离
@@ -97,8 +116,9 @@ class KSS:
         :return:
         """
         finalOutput = []
-        data = np.concatenate((self.X, XTest))
-        attr = self.compute_similarity_before(data)
+        # data = np.concatenate((self.X, XTest))
+        # attr = self.compute_similarity_before(data)
+        attr = self.calculate_similarity(self.X, XTest)
         train_size = len(self.X)
         for i in range(train_size, len(data)):         # 测试样本
             d = []

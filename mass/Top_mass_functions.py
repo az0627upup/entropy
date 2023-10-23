@@ -3,9 +3,9 @@ import scipy.spatial
 import numpy as np
 from sklearn.linear_model import Lasso
 from sklearn.linear_model import ridge_regression
+from kss import KSS
 
 
-# Topology-based Mass Functions (TopMF)
 class TopMF:
 
     def __init__(self, mass_type, features, labels):
@@ -16,17 +16,28 @@ class TopMF:
 
     def calculate_mass(self):
         for i in range(len(self.features)):
-            if(self.mass_type == 'SEP'):
+            if self.mass_type == 'SEP':
                 # self.mass.append(self.separation(self.features[i],self.labels[i]))
                 self.mass.append(self.separation_src(i, self.labels[i]))
-            elif(self.mass_type == 'COH'):
+            elif self.mass_type == 'COH':
                 self.mass.append(self.cohesion(self.features[i],self.labels[i]))
-            elif(self.mass_type == 'WPC'):
+            elif self.mass_type == 'WPC':
                 self.mass.append(self.weighted_per_class(self.features[i],self.labels[i]))
-            elif(self.mass_type == 'CC'):
+            elif self.mass_type == 'CC':
                 self.mass.append(self.circled_by_its_own_class(self.features[i],self.labels[i]))
             else:
                 raise KeyError('Mass function not implemented')
+        return self.mass
+
+    def calculate_mass_by_similarity(self, attr):
+        """
+        通过相似度去求质量
+        :param attr: 相似度矩阵
+        :return:
+        """
+        for i in range(len(self.features)):
+            if self.mass_type=='SEP':
+                self.mass.append(self.separation_similarity(i, self.labels[i], attr))
         return self.mass
 
     def Calculate_L2(self, X, Y, c):
@@ -47,6 +58,11 @@ class TopMF:
         # mass = np.log2(sum_distance)
         # print(mass)
 
+    def separation_similarity(self, i, class_q, attr):
+        train_len = len(self.features)
+        single_attr = attr[i, :train_len]
+        sum_distance = sum([distance if class_ != class_q else 0 for class_, distance in zip(self.labels, single_attr)])
+        return sum_distance
 
     def separation(self, xq, class_q):
         sumOfDistances = 0
@@ -64,21 +80,17 @@ class TopMF:
 
     def weighted_per_class(self, xq, class_q):
         n_q = sum([1 if label == class_q else 0 for label in self.labels])
-
         unique_elements, counts_elements = np.unique(self.labels, return_counts=True)
         class_and_freqs = sorted([(class_, freq) for class_,freq in zip(unique_elements, counts_elements)], key=lambda x: x[1])
         class_maj = class_and_freqs[-1][0]
         M = class_and_freqs[-1][1]
-
         mass = np.log2((M / n_q) + 1)
         return mass
 
     def circled_by_its_own_class(self, xq, class_q):
         distances =  scipy.spatial.distance.cdist(xq.reshape(1,-1), self.features, 'euclidean')
         class_and_distances = sorted([(class_, distance) for class_,distance in zip(self.labels, distances[0])], key=lambda x: x[1])
-
         SNk = sum([1 if elem[0] == class_q else 0 for elem in class_and_distances[:7]])
-        
         mass = np.log2(SNk + 2)
         return mass
 
